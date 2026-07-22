@@ -2,8 +2,7 @@ import os
 import sys
 import asyncio
 
-# --- رفع خطای ناسازگاری asyncio در پایتون‌های نسخه جدید (۳.۱۲ تا ۳.۱۴) ---
-# این بخش باید دقیقاً در بالاترین خطوط فایل و قبل از ایمپورت پایروگرام قرار گیرد
+# --- رفع خطای ناسازگاری asyncio ---
 try:
     asyncio.get_event_loop()
 except RuntimeError:
@@ -14,21 +13,20 @@ import threading
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 
-# تلاش برای ایمپورت کتابخانه‌های پایروگرام پس از حل مشکل asyncio
 try:
     from pyrogram import Client, filters
     from pyrogram.types import Message
 except ImportError as e:
-    print(f"خطا در لود کتابخانه‌ها (احتمالاً requirements.txt نصب نشده): {e}")
+    print(f"خطا در لود کتابخانه‌ها: {e}")
     sys.exit(1)
 
 
-# --- وب‌سرور سبک برای راضی نگه داشتن پورت رندر ---
+# --- وب‌سرور سبک ---
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
     class QuietHandler(SimpleHTTPRequestHandler):
         def log_message(self, format, *args):
-            pass  # غیرفعال کردن لاگ‌های مکرر وب‌سرور در کنسول
+            pass
         def do_GET(self):
             self.send_response(200)
             self.send_header("Content-type", "text/plain; charset=utf-8")
@@ -42,7 +40,6 @@ def run_web_server():
     except Exception as e:
         print(f"Web server failed to start: {e}")
 
-# اجرای وب‌سرور در یک Thread مجزا در پس‌زمینه
 threading.Thread(target=run_web_server, daemon=True).start()
 
 
@@ -50,21 +47,21 @@ threading.Thread(target=run_web_server, daemon=True).start()
 try:
     API_ID_ENV = os.environ.get("API_ID")
     API_HASH_ENV = os.environ.get("API_HASH")
-    SESSION_STRING = os.environ.get("SESSION_STRING")
+    SESSION_STRING_ENV = os.environ.get("SESSION_STRING")
     SOURCE_CHANNEL_ENV = os.environ.get("SOURCE_CHANNEL")
     TARGET_BOT_ENV = os.environ.get("TARGET_BOT")
 
-    # بررسی اینکه تمام متغیرها به درستی در رندر تنظیم شده باشند
-    if not all([API_ID_ENV, API_HASH_ENV, SESSION_STRING, SOURCE_CHANNEL_ENV, TARGET_BOT_ENV]):
+    if not all([API_ID_ENV, API_HASH_ENV, SESSION_STRING_ENV, SOURCE_CHANNEL_ENV, TARGET_BOT_ENV]):
         print("خطا: متغیرهای محیطی در تنظیمات رندر ست نشده‌اند!")
-        print(f"وضعیت متغیرها -> API_ID: {bool(API_ID_ENV)}, API_HASH: {bool(API_HASH_ENV)}, SESSION: {bool(SESSION_STRING)}, SOURCE: {bool(SOURCE_CHANNEL_ENV)}, TARGET: {bool(TARGET_BOT_ENV)}")
         sys.exit(1)
 
     API_ID = int(API_ID_ENV)
-    API_HASH = API_HASH_ENV.strip("'\" ")  # حذف کوتیشن‌های احتمالی در متغیر محیطی رندر
+    # پاک‌سازی متغیرها از هرگونه کاراکتر اضافی، فاصله یا کوتیشن که معمولاً در کپی/پیست رخ می‌دهد
+    API_HASH = API_HASH_ENV.strip("'\" \n\r\t")
+    SESSION_STRING = SESSION_STRING_ENV.strip("'\" \n\r\t")
 
     def parse_chat_id(value):
-        val = value.strip()
+        val = value.strip("'\" \n\r\t")
         if val.startswith("@"):
             return val
         if val.isdigit() or (val.startswith("-") and val[1:].isdigit()):
@@ -74,7 +71,6 @@ try:
     SOURCE_CHANNEL = parse_chat_id(SOURCE_CHANNEL_ENV)
     TARGET_BOT = parse_chat_id(TARGET_BOT_ENV)
 
-    # راه‌اندازی کلاینت پایروگرام
     app = Client(
         "gift_filter_userbot",
         api_id=API_ID,
