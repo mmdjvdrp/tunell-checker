@@ -2,7 +2,7 @@ import os
 import sys
 import asyncio
 
-# --- رفع خطای ناسازگاری asyncio ---
+# --- رفع خطای ناسازگاری asyncio برای نسخه‌های جدید پایتون ---
 try:
     asyncio.get_event_loop()
 except RuntimeError:
@@ -21,7 +21,7 @@ except ImportError as e:
     sys.exit(1)
 
 
-# --- وب‌سرور سبک ---
+# --- وب‌سرور سبک برای رندر ---
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
     class QuietHandler(SimpleHTTPRequestHandler):
@@ -43,22 +43,23 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 
-# --- لود متغیرهای محیطی و اجرای ایمن یوزربات ---
+# ==========================================
+# اطلاعات حساس (مستقیماً در کد قرار داده شد)
+# ==========================================
+API_ID = 2040
+API_HASH = "b18441a1ff607e10a989891a5462e627"
+SESSION_STRING = "1AZWarzsBu4FXtQL0R_uHo0xcKYpQYCXi_qOk-EzaxUOsUo3c_KN3XQy0oK6ZkeGp_6jxKXq_XTrv4FtoLvVA3YEgucEH8neSZSSsRsjmoD8uDCu4qf4XheYdLYkPqqFjLfDqJ1fNPy4TbovNzMfC9UksRMHabYs6Tun3y0n1TQIhk1oUgrsqHrkTvxXBUVLaHDaLk39m_pfdNXOi4QC9R8F063FGVTHAjnXEokf1heNjCA3Lc_bWybsGImCJRzddmHGtmtLz8pz4JsxGeG_9_qnj_bJHK0KEryPPUrIgKA7gwnOFDcHW0KWbx9a-m3B_ZiXfQSdp2prmNzG5Wa10OUu8tAy69Do="
+
+
+# --- اجرای ایمن یوزربات ---
 try:
-    API_ID_ENV = os.environ.get("API_ID")
-    API_HASH_ENV = os.environ.get("API_HASH")
-    SESSION_STRING_ENV = os.environ.get("SESSION_STRING")
+    # حالا فقط آیدی کانال مبدا و ربات مقصد را از محیط رندر می‌گیریم
     SOURCE_CHANNEL_ENV = os.environ.get("SOURCE_CHANNEL")
     TARGET_BOT_ENV = os.environ.get("TARGET_BOT")
 
-    if not all([API_ID_ENV, API_HASH_ENV, SESSION_STRING_ENV, SOURCE_CHANNEL_ENV, TARGET_BOT_ENV]):
-        print("خطا: متغیرهای محیطی در تنظیمات رندر ست نشده‌اند!")
+    if not SOURCE_CHANNEL_ENV or not TARGET_BOT_ENV:
+        print("خطا: SOURCE_CHANNEL یا TARGET_BOT در تنظیمات محیطی رندر ست نشده‌اند!")
         sys.exit(1)
-
-    API_ID = int(API_ID_ENV)
-    # پاک‌سازی متغیرها از هرگونه کاراکتر اضافی، فاصله یا کوتیشن که معمولاً در کپی/پیست رخ می‌دهد
-    API_HASH = API_HASH_ENV.strip("'\" \n\r\t")
-    SESSION_STRING = SESSION_STRING_ENV.strip("'\" \n\r\t")
 
     def parse_chat_id(value):
         val = value.strip("'\" \n\r\t")
@@ -78,6 +79,7 @@ try:
         session_string=SESSION_STRING
     )
 
+    # لیست کلمات ممنوعه
     BLACKLIST_KEYWORDS = ["boost", "premium", "active"]
 
     @app.on_message(filters.chat(SOURCE_CHANNEL) & filters.text)
